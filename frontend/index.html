@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Healthcare Chat Assistant</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header>
+        <h1>Healthcare Assistant</h1>
+        <p>Follow-up chat with your healthcare provider.</p>
+      </header>
+
+      <main>
+        <section id="chat-window" class="chat-window"></section>
+
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" type="text" placeholder="Type your update..." autocomplete="off" />
+          <button type="submit">Send</button>
+        </form>
+
+        <section id="summary-card" class="summary-card hidden"></section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
