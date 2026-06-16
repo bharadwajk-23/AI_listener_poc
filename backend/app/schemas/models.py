@@ -15,6 +15,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+    chat_ended: bool = False
 
 
 class SummaryRequest(BaseModel):

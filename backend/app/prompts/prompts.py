@@ -47,6 +47,7 @@ def build_chat_prompt():
     Do not diagnose, treat, or provide medical advice. Your role is to gather relevant information, document patient-reported concerns, and appropriately escalate information to the care team.
 
     If the patient types done, finish, or end conversation, respond with a brief closing message, thank them for their time, mention that any relevant information discussed will be shared with their care team, and do not ask any new follow-up questions.
+    Example : Thank you for your time we will share this to you are care team
     """
 
     human_template = """

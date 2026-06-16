@@ -1,4 +1,7 @@
 import json
+import os
+import urllib.request
+import urllib.error
 from datetime import datetime
 
 from app.services.db import find_summaries, insert_summary
@@ -19,9 +22,28 @@ router = APIRouter()
 conversation_chain = None
 summary_chain = None
 
+# Get API base URL from environment, default to localhost:8000
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+
 
 def format_history(history: List[Message]) -> str:
     return "\n".join(f"{item.role.capitalize()}: {item.content}" for item in history)
+
+
+def is_chat_ended(reply: str) -> bool:
+    normalized = reply.lower()
+    end_markers = [
+        "thank you for taking the time to speak with me today",
+        "shared with your care team",
+        "we'll be in touch soon",
+        "we will be in touch soon",
+        "shared with teams",
+        "shared with tems",
+        "thank you",
+        "care team"
+    ]
+    print("found")
+    return any(marker in normalized for marker in end_markers)
 
 
 def extract_json_object(text: str) -> str:
@@ -77,11 +99,43 @@ def normalize_summary_data(data: dict) -> dict:
 def chat(request: ChatRequest):
     conversation_text = format_history(request.conversation_history)
     try:
+        print("jello")
         reply = conversation_chain.predict(
             conversation_history=conversation_text,
             patient_message=request.message,
-        )
-        return ChatResponse(reply=reply.strip())
+        ).strip()
+        print("\n===== LLM RESPONSE =====")
+        print(reply)
+        print("========================\n")
+        chat_ended = is_chat_ended(reply)
+        print(chat_ended)
+        if chat_ended:
+            try:
+                summary_history = request.conversation_history + [
+                    Message(role="assistant", content=reply)
+                ]
+                payload = {
+                    "conversation_history": [
+                        {"role": m.role, "content": m.content} for m in summary_history
+                    ]
+                }
+                summary_url = f"{API_BASE_URL}/summary"
+                req = urllib.request.Request(
+                    summary_url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        resp_text = resp.read().decode("utf-8")
+                        # optional: log response
+                        print(f"Summary triggered, response: {resp.getcode()} {resp_text}")
+                except Exception as summary_exc:
+                    print(f"Warning: summary HTTP request failed after chat end: {summary_exc}")
+            except Exception as summary_exc:
+                print(f"Warning: failed to prepare summary request: {summary_exc}")
+
+        return ChatResponse(reply=reply, chat_ended=chat_ended)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
