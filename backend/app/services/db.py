@@ -6,6 +6,10 @@ from app.schemas.models import SummaryDocument
 
 _client = None
 
+# In-memory session storage for active conversations
+# Key: session_id, Value: list of message dicts {"role": ..., "content": ...}
+_active_conversations = {}
+
 
 def get_client():
     global _client
@@ -147,3 +151,22 @@ def insert_summary(doc: dict) -> str:
         return str(result.inserted_id)
     except errors.PyMongoError as e:
         raise
+
+
+# Session-based conversation storage functions
+def store_message(session_id: str, role: str, content: str) -> None:
+    """Store a message in the active conversation for a session."""
+    if session_id not in _active_conversations:
+        _active_conversations[session_id] = []
+    _active_conversations[session_id].append({"role": role, "content": content})
+
+
+def get_conversation_history(session_id: str) -> list[dict]:
+    """Retrieve the conversation history for a session."""
+    return _active_conversations.get(session_id, [])
+
+
+def clear_conversation(session_id: str) -> None:
+    """Clear the conversation history for a session."""
+    if session_id in _active_conversations:
+        del _active_conversations[session_id]

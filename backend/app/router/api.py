@@ -4,7 +4,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime
 
-from app.services.db import find_summaries, insert_summary
+from app.services.db import find_summaries, insert_summary, store_message, get_conversation_history, clear_conversation
 from typing import List
 
 from fastapi import APIRouter, HTTPException
@@ -25,6 +25,9 @@ summary_chain = None
 # Get API base URL from environment, default to localhost:8000
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
+# Default session ID (can be made dynamic per user if needed)
+DEFAULT_SESSION_ID = "default_session"
+
 
 def format_history(history: List[Message]) -> str:
     return "\n".join(f"{item.role.capitalize()}: {item.content}" for item in history)
@@ -42,7 +45,6 @@ def is_chat_ended(reply: str) -> bool:
         "thank you",
         "care team"
     ]
-    print("found")
     return any(marker in normalized for marker in end_markers)
 
 
@@ -97,27 +99,31 @@ def normalize_summary_data(data: dict) -> dict:
 
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
-    conversation_text = format_history(request.conversation_history)
+    # Use backend conversation history instead of frontend's
+    backend_history = get_conversation_history(DEFAULT_SESSION_ID)
+    
+    # Store user message
+    store_message(DEFAULT_SESSION_ID, "user", request.message)
+    
+    # Format history for LLM
+    conversation_text = format_history([Message(**msg) for msg in backend_history] + [Message(role="user", content=request.message)])
+    
     try:
-        print("jello")
         reply = conversation_chain.predict(
             conversation_history=conversation_text,
             patient_message=request.message,
         ).strip()
-        print("\n===== LLM RESPONSE =====")
-        print(reply)
-        print("========================\n")
+        
+        # Store assistant reply
+        store_message(DEFAULT_SESSION_ID, "assistant", reply)
+        
         chat_ended = is_chat_ended(reply)
-        print(chat_ended)
         if chat_ended:
             try:
-                summary_history = request.conversation_history + [
-                    Message(role="assistant", content=reply)
-                ]
+                # Get full conversation history including current exchange
+                full_history = get_conversation_history(DEFAULT_SESSION_ID)
                 payload = {
-                    "conversation_history": [
-                        {"role": m.role, "content": m.content} for m in summary_history
-                    ]
+                    "conversation_history": full_history
                 }
                 summary_url = f"{API_BASE_URL}/summary"
                 req = urllib.request.Request(
@@ -128,8 +134,7 @@ def chat(request: ChatRequest):
                 try:
                     with urllib.request.urlopen(req, timeout=10) as resp:
                         resp_text = resp.read().decode("utf-8")
-                        # optional: log response
-                        print(f"Summary triggered, response: {resp.getcode()} {resp_text}")
+                        print(f"Summary triggered, response: {resp.getcode()}")
                 except Exception as summary_exc:
                     print(f"Warning: summary HTTP request failed after chat end: {summary_exc}")
             except Exception as summary_exc:
@@ -142,7 +147,10 @@ def chat(request: ChatRequest):
 
 @router.post("/summary", response_model=SummaryResponse)
 def summary(request: SummaryRequest):
-    conversation_text = format_history(request.conversation_history)
+    # Use backend conversation history instead of request history
+    backend_history = get_conversation_history(DEFAULT_SESSION_ID)
+    conversation_text = format_history([Message(**msg) for msg in backend_history])
+    
     try:
         raw_summary = summary_chain.predict(conversation_history=conversation_text)
         try:
@@ -154,16 +162,15 @@ def summary(request: SummaryRequest):
         # persist summary to MongoDB (best-effort)
         try:
             doc = dict(data)
-            doc["conversation_history"] = [
-                {"role": m.role, "content": m.content} for m in request.conversation_history
-            ]
+            doc["conversation_history"] = backend_history
             doc["stored_at"] = datetime.utcnow().isoformat()
             inserted_id = insert_summary(doc)
-            # include an optional id in the returned payload? keep response shape as-is
         except Exception as db_exc:
-            # don't fail the request if DB storage fails; just log
             print(f"Warning: failed to store summary in DB: {db_exc}")
 
+        # Clear conversation history after storing summary
+        clear_conversation(DEFAULT_SESSION_ID)
+        
         return SummaryResponse(**data)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

@@ -29,9 +29,10 @@ function buildConversationPayload() {
 }
 
 async function sendChat(userText) {
+  // Send only the current message; backend manages conversation history
   const payload = {
     message: userText,
-    conversation_history: buildConversationPayload(),
+    conversation_history: []  // Backend now stores the full history
   };
 
   const response = await fetch(CHAT_ENDPOINT, {
@@ -49,8 +50,9 @@ async function sendChat(userText) {
 }
 
 async function requestSummary() {
+  // Backend now manages conversation history, so send empty array
   const payload = {
-    conversation_history: buildConversationPayload(),
+    conversation_history: []
   };
 
   const response = await fetch(SUMMARY_ENDPOINT, {
@@ -89,7 +91,7 @@ chatForm.addEventListener("submit", async (event) => {
   const userText = chatInput.value.trim();
   if (!userText) return;
 
-  appendMessage("user", userText);
+  // Frontend still keeps local UI history for display, but backend stores persistent history
   conversationHistory.push({ role: "user", content: userText });
   chatInput.value = "";
 
@@ -97,6 +99,9 @@ chatForm.addEventListener("submit", async (event) => {
     const assistantReply = await sendChat(userText);
     appendMessage("assistant", assistantReply);
     conversationHistory.push({ role: "assistant", content: assistantReply });
+
+    // Check for chat_ended signal from backend (if backend detects end phrases)
+    // For now, also check local termination keywords as fallback    conversationHistory.push({ role: "assistant", content: assistantReply });
 
     const normalized = userText.toLowerCase();
     if (terminationKeywords.includes(normalized)) {
