@@ -1,4 +1,7 @@
 import json
+from datetime import datetime
+
+from app.services.db import find_summaries, insert_summary
 from typing import List
 
 from fastapi import APIRouter, HTTPException
@@ -7,6 +10,7 @@ from app.schemas.models import (
     ChatRequest,
     ChatResponse,
     Message,
+    SummaryDocument,
     SummaryRequest,
     SummaryResponse,
 )
@@ -93,16 +97,27 @@ def summary(request: SummaryRequest):
             extracted = extract_json_object(raw_summary)
             data = json.loads(extracted)
         data = normalize_summary_data(data)
+        # persist summary to MongoDB (best-effort)
+        try:
+            doc = dict(data)
+            doc["conversation_history"] = [
+                {"role": m.role, "content": m.content} for m in request.conversation_history
+            ]
+            doc["stored_at"] = datetime.utcnow().isoformat()
+            inserted_id = insert_summary(doc)
+            # include an optional id in the returned payload? keep response shape as-is
+        except Exception as db_exc:
+            # don't fail the request if DB storage fails; just log
+            print(f"Warning: failed to store summary in DB: {db_exc}")
+
         return SummaryResponse(**data)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Summary generation failed to return valid JSON: {exc}",
-        )
-    except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=500,
-            detail="Summary generation failed to return valid JSON. Please check the Groq model response.",
-        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/summaries", response_model=List[SummaryDocument])
+def list_summaries():
+    try:
+        return find_summaries()
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

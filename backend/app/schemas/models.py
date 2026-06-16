@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 
 
 class Message(BaseModel):
@@ -30,3 +31,17 @@ class SummaryResponse(BaseModel):
     new_symptoms: List[str]
     patient_concerns: List[str]
     clinical_summary: str
+
+
+class SummaryDocument(BaseModel):
+    patient_progress: str
+    current_symptoms: List[str]
+    pain_level: str
+    functional_status: str
+    exercise_adherence: str
+    medication_concerns: str
+    new_symptoms: List[str]
+    patient_concerns: List[str]
+    clinical_summary: str
+    conversation_history: List[Message]
+    stored_at: Optional[datetime] = None
