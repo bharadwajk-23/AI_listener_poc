@@ -13,7 +13,12 @@ from app.services.summary_chain import create_summary_chain
 import app.router.api as api
 from app.services.db import ensure_collections
 
-app = FastAPI(title="Healthcare Chat Assistant")
+app = FastAPI(
+    title="Healthcare Chat Assistant",
+    docs_url="/ptmantra/docs",
+    openapi_url="/ptmantra/openapi.json",
+    redoc_url="/ptmantra/redoc"
+)
 app.include_router(
     router,
     prefix="/ptmantra",
@@ -44,5 +49,3 @@ try:
     print("Db Collections ensured successfully")
 except Exception as exc:
     print(f"Warning: ensure_collections failed: {exc}")
-
-app.include_router(router)
