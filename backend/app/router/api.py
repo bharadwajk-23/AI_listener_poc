@@ -23,7 +23,7 @@ conversation_chain = None
 summary_chain = None
 
 # Get API base URL from environment, default to localhost:8000
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/ptmantra")
 
 # Default session ID (can be made dynamic per user if needed)
 DEFAULT_SESSION_ID = "default_session"

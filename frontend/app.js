@@ -1,5 +1,5 @@
-const CHAT_ENDPOINT = "http://localhost:8000/chat";
-const SUMMARY_ENDPOINT = "http://localhost:8000/summary";
+const CHAT_ENDPOINT = "http://localhost:8000/ptmantra/chat";
+const SUMMARY_ENDPOINT = "http://localhost:8000/ptmantra/summary";
 const chatWindow = document.getElementById("chat-window");
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");

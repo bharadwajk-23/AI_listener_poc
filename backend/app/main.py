@@ -14,6 +14,11 @@ import app.router.api as api
 from app.services.db import ensure_collections
 
 app = FastAPI(title="Healthcare Chat Assistant")
+app.include_router(
+    router,
+    prefix="/ptmantra",
+    tags=["PTMantra"]
+)
 
 # load environment variables from .env for local development
 load_dotenv()
