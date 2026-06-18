@@ -10,15 +10,18 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    session_id: Optional[str] = None
     conversation_history: List[Message] = []
 
 
 class ChatResponse(BaseModel):
     reply: str
+    session_id: str
     chat_ended: bool = False
 
 
 class SummaryRequest(BaseModel):
+    session_id: str
     conversation_history: List[Message] = []
 
 

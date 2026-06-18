@@ -1,10 +1,11 @@
-const CHAT_ENDPOINT = "http://localhost:8000/ptmantra/chat";
-const SUMMARY_ENDPOINT = "http://localhost:8000/ptmantra/summary";
+const CHAT_ENDPOINT = "http://localhost:8004/ptmantra/chat";
+const SUMMARY_ENDPOINT = "http://localhost:8004/ptmantra/summary";
 const chatWindow = document.getElementById("chat-window");
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
 const summaryCard = document.getElementById("summary-card");
 
+let sessionId = null;
 const conversationHistory = [];
 const terminationKeywords = ["done", "finish", "end conversation"];
 
@@ -21,18 +22,10 @@ function appendMessage(role, text) {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-function buildConversationPayload() {
-  return conversationHistory.map((item) => ({
-    role: item.role,
-    content: item.content,
-  }));
-}
-
 async function sendChat(userText) {
-  // Send only the current message; backend manages conversation history
   const payload = {
     message: userText,
-    conversation_history: []  // Backend now stores the full history
+    ...(sessionId && { session_id: sessionId }),
   };
 
   const response = await fetch(CHAT_ENDPOINT, {
@@ -46,26 +39,9 @@ async function sendChat(userText) {
   }
 
   const data = await response.json();
-  return data.reply;
-}
-
-async function requestSummary() {
-  // Backend now manages conversation history, so send empty array
-  const payload = {
-    conversation_history: []
-  };
-
-  const response = await fetch(SUMMARY_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    throw new Error("Unable to reach the summary service.");
-  }
-
-  return response.json();
+  // Store session_id returned by backend for subsequent messages
+  sessionId = data.session_id;
+  return data;
 }
 
 function renderSummary(summary) {
@@ -96,17 +72,13 @@ chatForm.addEventListener("submit", async (event) => {
   chatInput.value = "";
 
   try {
-    const assistantReply = await sendChat(userText);
-    appendMessage("assistant", assistantReply);
-    conversationHistory.push({ role: "assistant", content: assistantReply });
+    const { reply, chat_ended } = await sendChat(userText);
+    appendMessage("assistant", reply);
+    conversationHistory.push({ role: "assistant", content: reply });
 
-    // Check for chat_ended signal from backend (if backend detects end phrases)
-    // For now, also check local termination keywords as fallback    conversationHistory.push({ role: "assistant", content: assistantReply });
-
-    const normalized = userText.toLowerCase();
-    if (terminationKeywords.includes(normalized)) {
-      const summary = await requestSummary();
-      renderSummary(summary);
+    if (chat_ended) {
+      // Session is done — backend auto-triggers summary; reset for next consultation
+      sessionId = null;
     }
   } catch (error) {
     appendMessage("assistant", "Sorry, I could not process your request. Please try again.");

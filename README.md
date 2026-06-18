@@ -81,8 +81,8 @@ The project has two main parts:
   - Styles the chat window, buttons, and summary display.
 - `frontend/app.js`
   - Manages conversation state in `conversationHistory`.
-  - Sends chat requests to `http://localhost:8000/chat`.
-  - Sends summary requests to `http://localhost:8000/summary` when the user types a termination keyword.
+  - Sends chat requests to `http://localhost:8004/chat`.
+  - Sends summary requests to `http://localhost:8004/summary` when the user types a termination keyword.
   - Renders messages and the final summary in the browser.
 
 ## API Reference
@@ -186,7 +186,7 @@ GROQ_MODEL=llama-3.3-70b-versatile
 5. Start the backend service:
 
 ```powershell
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8004
 ```
 
 6. In a second terminal, serve the frontend:

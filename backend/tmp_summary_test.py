@@ -14,6 +14,6 @@ payload = {
     ]
 }
 
-response = requests.post("http://localhost:8000/summary", json=payload)
+response = requests.post("http://localhost:8004/summary", json=payload)
 print(response.status_code)
 print(response.text)
