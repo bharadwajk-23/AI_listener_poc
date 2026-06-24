@@ -1,7 +1,5 @@
 import json
 import os
-import urllib.request
-import urllib.error
 import uuid
 from datetime import datetime
 
@@ -95,6 +93,27 @@ def normalize_summary_data(data: dict) -> dict:
     return data
 
 
+def build_summary_from_history(history: list) -> dict:
+    conversation_text = format_history(
+        [Message(**msg) if isinstance(msg, dict) else msg for msg in history]
+    )
+    raw_summary = summary_chain.predict(conversation_history=conversation_text)
+    try:
+        data = json.loads(raw_summary)
+    except json.JSONDecodeError:
+        extracted = extract_json_object(raw_summary)
+        data = json.loads(extracted)
+    return normalize_summary_data(data)
+
+
+def store_history_summary(session_id: str, history: list, data: dict) -> None:
+    history_records = [msg.dict() if isinstance(msg, Message) else msg for msg in history]
+    doc = dict(data)
+    doc["conversation_history"] = history_records
+    doc["stored_at"] = datetime.utcnow().isoformat()
+    insert_summary(doc)
+
+
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
     # Use provided session_id or generate a new one for a fresh conversation
@@ -118,23 +137,13 @@ def chat(request: ChatRequest):
         if chat_ended:
             try:
                 full_history = get_conversation_history(session_id)
-                payload = {
-                    "session_id": session_id,
-                    "conversation_history": full_history,
-                }
-                summary_url = f"{API_BASE_URL}/summary"
-                req = urllib.request.Request(
-                    summary_url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                summary_request = SummaryRequest(
+                    session_id=session_id,
+                    conversation_history=full_history
                 )
-                try:
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        print(f"Summary triggered, response: {resp.getcode()}")
-                except Exception as summary_exc:
-                    print(f"Warning: summary HTTP request failed after chat end: {summary_exc}")
+                summary(summary_request)
             except Exception as summary_exc:
-                print(f"Warning: failed to prepare summary request: {summary_exc}")
+                print(f"Warning: summary generation failed after chat end: {summary_exc}")
 
         return ChatResponse(reply=reply, session_id=session_id, chat_ended=chat_ended)
     except Exception as exc:
@@ -143,26 +152,17 @@ def chat(request: ChatRequest):
 
 @router.post("/summary", response_model=SummaryResponse)
 def summary(request: SummaryRequest):
-    backend_history = get_conversation_history(request.session_id)
-    conversation_text = format_history([Message(**msg) for msg in backend_history])
+    history = request.conversation_history or get_conversation_history(request.session_id)
+    history_records = [msg.dict() if isinstance(msg, Message) else msg for msg in history]
 
     try:
-        raw_summary = summary_chain.predict(conversation_history=conversation_text)
+        data = build_summary_from_history(history_records)
         try:
-            data = json.loads(raw_summary)
-        except json.JSONDecodeError:
-            extracted = extract_json_object(raw_summary)
-            data = json.loads(extracted)
-        data = normalize_summary_data(data)
-        try:
-            doc = dict(data)
-            doc["conversation_history"] = backend_history
-            doc["stored_at"] = datetime.utcnow().isoformat()
-            insert_summary(doc)
+            store_history_summary(request.session_id, history_records, data)
         except Exception as db_exc:
             print(f"Warning: failed to store summary in DB: {db_exc}")
-
         clear_conversation(request.session_id)
+        print("stored in db and removed in session")
 
         return SummaryResponse(**data)
     except Exception as exc:

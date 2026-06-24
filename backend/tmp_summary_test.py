@@ -1,6 +1,7 @@
 import requests
 
 payload = {
+    "session_id": "185",
     "conversation_history": [
         {"role": "assistant", "content": "Hello, how have you been feeling since your last check-in?"},
         {"role": "user", "content": "hand pain"},
@@ -14,6 +15,6 @@ payload = {
     ]
 }
 
-response = requests.post("http://localhost:8004/summary", json=payload)
+response = requests.post("http://localhost:8004/ptmantra/summary", json=payload)
 print(response.status_code)
 print(response.text)

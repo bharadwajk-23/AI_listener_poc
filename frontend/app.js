@@ -1,5 +1,8 @@
-const CHAT_ENDPOINT    = "https://ailabs.youngsoft.com/ptmantra/chat";
-const SUMMARY_ENDPOINT = "https://ailabs.youngsoft.com/ptmantra/summary";
+// const CHAT_ENDPOINT    = "https://ailabs.youngsoft.com/ptmantra/chat";
+// const SUMMARY_ENDPOINT = "https://ailabs.youngsoft.com/ptmantra/summary";
+
+const CHAT_ENDPOINT    = "http://localhost:8004/ptmantra/chat";
+const SUMMARY_ENDPOINT = "http://localhost:8004/ptmantra/summary";
 
 const chatWindow     = document.getElementById("chat-window");
 const chatForm       = document.getElementById("chat-form");
