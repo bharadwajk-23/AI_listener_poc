@@ -18,7 +18,7 @@ RestartSec=5
 WantedBy=multi-user.target
 """
 
-with open("backend.service", "w") as f:
+with open("ai_listener_backend.service", "w") as f:
     f.write(service_content)
 
-print("backend.service created successfully")
+print("ai_listener_backend.service created successfully")
