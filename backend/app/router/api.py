@@ -134,7 +134,7 @@ def store_history_summary(session_id: str, history: list, data: dict) -> None:
 def chat(request: ChatRequest):
     # Use provided session_id or generate a new one for a fresh conversation
     session_id = request.session_id or str(uuid.uuid4())
-
+    print("session id: ",session_id)
     backend_history = get_conversation_history(session_id)
     followup_questions = count_assistant_followup_questions([Message(**msg) for msg in backend_history])
 
