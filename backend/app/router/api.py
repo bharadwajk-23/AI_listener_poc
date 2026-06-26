@@ -24,6 +24,12 @@ summary_chain = None
 # Get API base URL from environment, default to localhost:8004
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8004/ptmantra")
 
+FOLLOWUP_QUESTION_LIMIT = 3
+CLOSING_MESSAGE = (
+    "Thank you for sharing this information today. Your responses have been recorded "
+    "and will be shared with your care team. We appreciate your time and wish you a smooth recovery."
+)
+
 
 def format_history(history: List[Message]) -> str:
     return "\n".join(f"{item.role.capitalize()}: {item.content}" for item in history)
@@ -42,6 +48,16 @@ def is_chat_ended(reply: str) -> bool:
         "care team"
     ]
     return any(marker in normalized for marker in end_markers)
+
+
+def count_assistant_followup_questions(history: List[Message]) -> int:
+    """Count assistant questions in history, excluding the initial greeting."""
+    assistant_messages = [msg for msg in history if msg.role == "assistant"]
+    followup_count = 0
+    for index, message in enumerate(assistant_messages):
+        followup_count += 1
+    print(followup_count)
+    return followup_count
 
 
 def extract_json_object(text: str) -> str:
@@ -120,8 +136,26 @@ def chat(request: ChatRequest):
     session_id = request.session_id or str(uuid.uuid4())
 
     backend_history = get_conversation_history(session_id)
+    followup_questions = count_assistant_followup_questions([Message(**msg) for msg in backend_history])
 
     store_message(session_id, "user", request.message)
+
+    if followup_questions >= FOLLOWUP_QUESTION_LIMIT:
+        print("hard stop")
+        reply = CLOSING_MESSAGE
+        store_message(session_id, "assistant", reply)
+        chat_ended = True
+        try:
+            full_history = get_conversation_history(session_id)
+            summary_request = SummaryRequest(
+                session_id=session_id,
+                conversation_history=full_history,
+            )
+            summary(summary_request)
+        except Exception as summary_exc:
+            print(f"Warning: summary generation failed after chat end: {summary_exc}")
+
+        return ChatResponse(reply=reply, session_id=session_id, chat_ended=chat_ended)
 
     conversation_text = format_history([Message(**msg) for msg in backend_history] + [Message(role="user", content=request.message)])
 
