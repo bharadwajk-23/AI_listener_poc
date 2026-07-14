@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Summaries Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+ <main class="container">
+    <header class="header">
+      <div>
+        <h1>Patient Summary</h1>
+        <p class="subtitle">Summaries from the listening service</p>
+      </div>
+      <div class="toolbar">
+        <div class="nav-tabs">
+          <button class="tab">Program</button>
+          <button class="tab">Analytics</button>
+          <button class="tab tab-active">Clinical Notes</button>
+          <button class="tab">Activity Report</button>
+        </div>
+        <div class="page-actions">
+          <button class="filter-button">Filters <span>⚙</span></button>
+          <button class="download-button">⬇</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="status" class="status">Loading summaries from configured endpoint.</div>
+
+    <section id="summaries" class="summaries"></section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

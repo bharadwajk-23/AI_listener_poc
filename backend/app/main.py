@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.router.api import router
 from app.schemas.models import Message
@@ -49,3 +50,7 @@ try:
     print("Db Collections ensured successfully")
 except Exception as exc:
     print(f"Warning: ensure_collections failed: {exc}")
+
+# Serve frontend static files for the summary dashboard
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/ptmantra/summary_dashboard", StaticFiles(directory=static_dir, html=True), name="summary_dashboard")
