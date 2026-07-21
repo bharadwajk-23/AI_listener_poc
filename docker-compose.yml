@@ -1,0 +1,7 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8004:8004"
+    env_file:
+      - .env
