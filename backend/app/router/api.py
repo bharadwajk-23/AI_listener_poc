@@ -27,7 +27,7 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8004/ptmantra")
 FOLLOWUP_QUESTION_LIMIT = 3
 CLOSING_MESSAGE = (
     "Thank you for sharing this information today. Your responses have been recorded "
-    "and will be shared with your care team. We appreciate your time and wish you a smooth recovery."
+    "and will be shared with your care team."
 )
 
 
