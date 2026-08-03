@@ -22,7 +22,7 @@ conversation_chain = None
 summary_chain = None
 
 # Get API base URL from environment, default to localhost:8004
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8004/ptmantra")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8004")
 
 FOLLOWUP_QUESTION_LIMIT = 3
 CLOSING_MESSAGE = (

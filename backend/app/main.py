@@ -16,9 +16,9 @@ from app.services.db import ensure_collections
 
 app = FastAPI(
     title="Healthcare Chat Assistant",
-    docs_url="/ptmantra/docs",
-    openapi_url="/ptmantra/openapi.json",
-    redoc_url="/ptmantra/redoc"
+    # docs_url="/ptmantra/docs",
+    # openapi_url="/ptmantra/openapi.json",
+    # redoc_url="/ptmantra/redoc"
 )
 app.include_router(
     router,
