@@ -22,7 +22,6 @@ app = FastAPI(
 )
 app.include_router(
     router,
-    prefix="/ptmantra",
     tags=["PTMantra"]
 )
 
@@ -53,4 +52,4 @@ except Exception as exc:
 
 # Serve frontend static files for the summary dashboard
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-app.mount("/ptmantra/summary_dashboard", StaticFiles(directory=static_dir, html=True), name="summary_dashboard")
+app.mount("/dashboard", StaticFiles(directory=static_dir, html=True), name="summary_dashboard")
