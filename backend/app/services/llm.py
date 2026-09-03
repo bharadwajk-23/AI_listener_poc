@@ -11,5 +11,5 @@ def get_llm():
     if not api_key:
         raise ValueError("GROQ_API_KEY environment variable is required.")
 
-    model_name = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model_name = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
     return ChatGroq(model=model_name, temperature=0.3, api_key=api_key)
